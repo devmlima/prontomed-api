@@ -18,8 +18,8 @@ export class AppointmentService implements IAppointmentService {
       doctorId: a.doctorId,
       patientId: a.patientId,
       scheduledAt: a.scheduledAt instanceof Date
-        ? a.scheduledAt.toISOString()
-        : String(a.scheduledAt),
+        ? a.scheduledAt.toISOString().slice(0, 19)
+        : String(a.scheduledAt).slice(0, 19),
       durationMinutes: Number(a.durationMinutes),
       status: a.status,
       notes: a.notes ?? null,
