@@ -2,6 +2,8 @@ import { Router, Request, Response } from 'express';
 import { Container } from 'typedi';
 import { AppointmentService } from '../services/AppointmentService';
 import { authMiddleware } from '../middlewares/auth.middleware';
+import { validate } from '../middlewares/validate.middleware';
+import { createAppointmentSchema, updateAppointmentSchema } from '../../2-domain/schemas/appointment.schema';
 import { ListAppointmentsUseCase } from '../../3-business/useCases/appointment/ListAppointmentsUseCase';
 import { CreateAppointmentUseCase } from '../../3-business/useCases/appointment/CreateAppointmentUseCase';
 import { UpdateAppointmentUseCase } from '../../3-business/useCases/appointment/UpdateAppointmentUseCase';
@@ -17,7 +19,7 @@ router.get('/', async (req: Request, res: Response) => {
   await useCase.execute(req, res);
 });
 
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', validate(createAppointmentSchema), async (req: Request, res: Response) => {
   const useCase = new CreateAppointmentUseCase(Container.get(AppointmentService));
   await useCase.execute(req, res);
 });
@@ -27,7 +29,7 @@ router.get('/:id', async (req: Request, res: Response) => {
   await useCase.execute(req, res);
 });
 
-router.put('/:id', async (req: Request, res: Response) => {
+router.put('/:id', validate(updateAppointmentSchema), async (req: Request, res: Response) => {
   const useCase = new UpdateAppointmentUseCase(Container.get(AppointmentService));
   await useCase.execute(req, res);
 });

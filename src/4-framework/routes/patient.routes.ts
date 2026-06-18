@@ -2,6 +2,8 @@ import { Router, Request, Response } from 'express';
 import { Container } from 'typedi';
 import { PatientService } from '../services/PatientService';
 import { authMiddleware } from '../middlewares/auth.middleware';
+import { validate } from '../middlewares/validate.middleware';
+import { createPatientSchema, updatePatientSchema } from '../../2-domain/schemas/patient.schema';
 import { ListPatientsUseCase } from '../../3-business/useCases/patient/ListPatientsUseCase';
 import { CreatePatientUseCase } from '../../3-business/useCases/patient/CreatePatientUseCase';
 import { UpdatePatientUseCase } from '../../3-business/useCases/patient/UpdatePatientUseCase';
@@ -17,7 +19,7 @@ router.get('/', async (req: Request, res: Response) => {
   await useCase.execute(req, res);
 });
 
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', validate(createPatientSchema), async (req: Request, res: Response) => {
   const useCase = new CreatePatientUseCase(Container.get(PatientService));
   await useCase.execute(req, res);
 });
@@ -27,7 +29,7 @@ router.get('/:id', async (req: Request, res: Response) => {
   await useCase.execute(req, res);
 });
 
-router.put('/:id', async (req: Request, res: Response) => {
+router.put('/:id', validate(updatePatientSchema), async (req: Request, res: Response) => {
   const useCase = new UpdatePatientUseCase(Container.get(PatientService));
   await useCase.execute(req, res);
 });
