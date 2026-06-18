@@ -231,3 +231,4 @@ docker logs prontomed-mysql -f
 # Acessar o MySQL diretamente
 docker exec -it prontomed-mysql mysql -uroot -proot prontomed
 ```
+
