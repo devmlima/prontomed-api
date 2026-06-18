@@ -1,0 +1,400 @@
+{
+  "info": {
+    "_postman_id": "29e6709a-b866-4e3d-84fd-5d33fb3ed2a6",
+    "name": "prontomed",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "30872273"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const jsonData = pm.response.json()",
+                  "pm.collectionVariables.set(\"token\", jsonData.token)"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"joao@clinica.com\",\"password\":\"senha123\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/auth/login",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Generated from cURL: curl -X POST http://localhost:3000/api/auth/login \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"email\":\"joao@clinica.com\",\"password\":\"senha123\"}'\n"
+          },
+          "response": []
+        },
+        {
+          "name": "SignUp",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"Dr. João Silva\",\"email\":\"joao@clinica.com\",\"password\":\"senha123\",\"crm\":\"SP-123456\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/auth/register",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            },
+            "description": "Generated from cURL: curl -X POST http://localhost:3000/api/doctors \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"name\":\"Dr. João Silva\",\"email\":\"joao@clinica.com\",\"password\":\"senha123\",\"crm\":\"SP-123456\"}'\n"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Pacients",
+      "item": [
+        {
+          "name": "Listar pacientes",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/patients",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "patients"
+              ]
+            },
+            "description": "Generated from cURL: curl -s -X GET http://localhost:3000/api/patients \\\n  -H \"Authorization: Bearer SEU_TOKEN_AQUI\" | jq .\n"
+          },
+          "response": []
+        },
+        {
+          "name": "Paciente por id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/patients/4a2efc0f-bddb-4fcc-adfe-0b92e7a0a594",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "patients",
+                "4a2efc0f-bddb-4fcc-adfe-0b92e7a0a594"
+              ]
+            },
+            "description": "Generated from cURL: curl -X GET http://localhost:3000/api/patients/uuid-do-paciente \\\n  -H \"Authorization: Bearer eyJhbGci...\"\n"
+          },
+          "response": []
+        },
+        {
+          "name": "Criar paciente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Neto Lima\",\n    \"phone\": \"(11) 99999-9998\",\n    \"email\": \"neto@example.com\",\n    \"birthDate\": \"1997-02-01\",\n    \"gender\": \"M\",\n    \"height\": 1.78,\n    \"weight\": 65.50\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/patients",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "patients"
+              ]
+            },
+            "description": "Generated from cURL: curl -s -X POST http://localhost:3000/api/patients \\\n  -H \"Content-Type: application/json\" \\\n  -H \"Authorization: Bearer SEU_TOKEN\" \\\n  -d '{\n    \"name\": \"Pedro Lima\",\n    \"phone\": \"(11) 99999-9999\",\n    \"email\": \"pedro@example.com\",\n    \"birthDate\": \"1987-01-01\",\n    \"gender\": \"M\",\n    \"height\": 1.68,\n    \"weight\": 75.50\n  }' | jq .\n"
+          },
+          "response": []
+        },
+        {
+          "name": "Editar paciente",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Pedro Lima Atualizado\",\n    \"weight\": 80.00\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/patients/4a2efc0f-bddb-4fcc-adfe-0b92e7a0a594",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "patients",
+                "4a2efc0f-bddb-4fcc-adfe-0b92e7a0a594"
+              ]
+            },
+            "description": "Generated from cURL: curl -s -X PUT http://localhost:3000/api/patients/UUID_DO_PACIENTE \\\n  -H \"Content-Type: application/json\" \\\n  -H \"Authorization: Bearer SEU_TOKEN\" \\\n  -d '{\n    \"name\": \"Pedro Lima Atualizado\",\n    \"weight\": 80.00\n  }' | jq .\n"
+          },
+          "response": []
+        },
+        {
+          "name": "Excluir (anonimização LGPD)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/patients/4ad2f421-c32e-4398-8c10-31ce348c0d96",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "patients",
+                "4ad2f421-c32e-4398-8c10-31ce348c0d96"
+              ]
+            },
+            "description": "Generated from cURL: curl -s -X DELETE http://localhost:3000/api/patients/UUID_DO_PACIENTE \\\n  -H \"Authorization: Bearer SEU_TOKEN\"\n"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Appointments",
+      "item": [
+        {
+          "name": "Listar agendamentos",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/appointments",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "appointments"
+              ]
+            },
+            "description": "Generated from cURL: curl -s -X GET http://localhost:3000/api/appointments \\\n  -H \"Authorization: Bearer SEU_TOKEN\" | jq .\n"
+          },
+          "response": []
+        },
+        {
+          "name": "Agendamento por id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/appointments/afd3147d-b95c-4063-b0b2-e5b0456eb539",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "appointments",
+                "afd3147d-b95c-4063-b0b2-e5b0456eb539"
+              ]
+            },
+            "description": "Generated from cURL: curl -X GET http://localhost:3000/api/appointments/<ID_DO_AGENDAMENTO> \\\n  -H \"Authorization: Bearer <SEU_TOKEN>\"\n"
+          },
+          "response": []
+        },
+        {
+          "name": "Criar agendamento",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"patientId\": \"4a2efc0f-bddb-4fcc-adfe-0b92e7a0a594\",\n    \"scheduledAt\": \"2026-06-22T14:00:00\",\n    \"durationMinutes\": 30\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/appointments",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "appointments"
+              ]
+            },
+            "description": "Generated from cURL: curl -s -X POST http://localhost:3000/api/appointments \\\n  -H \"Content-Type: application/json\" \\\n  -H \"Authorization: Bearer SEU_TOKEN\" \\\n  -d '{\n    \"patientId\": \"UUID_DO_PACIENTE\",\n    \"scheduledAt\": \"2026-06-20T14:00:00\",\n    \"durationMinutes\": 30\n  }' | jq .\n"
+          },
+          "response": []
+        },
+        {
+          "name": "Atualizar agendamento",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n     \"status\": \"completed\"\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/appointments/afd3147d-b95c-4063-b0b2-e5b0456eb539",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "appointments",
+                "afd3147d-b95c-4063-b0b2-e5b0456eb539"
+              ]
+            },
+            "description": "Generated from cURL: curl -s -X PUT http://localhost:3000/api/appointments/UUID_DO_AGENDAMENTO \\\n  -H \"Content-Type: application/json\" \\\n  -H \"Authorization: Bearer SEU_TOKEN\" \\\n  -d '{\n    \"scheduledAt\": \"2026-06-20T15:00:00\",\n    \"durationMinutes\": 45\n  }' | jq .\n"
+          },
+          "response": []
+        },
+        {
+          "name": "Cancelar agendamento",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/appointments/6551d073-fe89-487c-8d77-1f39a6124976/cancel",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "appointments",
+                "6551d073-fe89-487c-8d77-1f39a6124976",
+                "cancel"
+              ]
+            },
+            "description": "Generated from cURL: curl -s -X PATCH http://localhost:3000/api/appointments/UUID_DO_AGENDAMENTO/cancel \\\n  -H \"Authorization: Bearer SEU_TOKEN\"\n"
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "token",
+      "value": ""
+    }
+  ]
+}
