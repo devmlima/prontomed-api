@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 import express from 'express';
+import cors from 'cors';
 import { Container } from 'typedi';
 import { PatientRepository } from './4-framework/repositories/PatientRepository';
 import { DoctorRepository } from './4-framework/repositories/DoctorRepository';
@@ -17,6 +18,7 @@ Container.set(DOCTOR_REPOSITORY_TOKEN, new DoctorRepository());
 Container.set(APPOINTMENT_REPOSITORY_TOKEN, new AppointmentRepository());
 
 const app = express();
+app.use(cors());
 app.use(express.json());
 
 app.use('/api/auth', authRoutes);
