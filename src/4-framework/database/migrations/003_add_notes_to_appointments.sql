@@ -1,0 +1,2 @@
+ALTER TABLE appointments
+  ADD COLUMN notes TEXT NULL DEFAULT NULL AFTER status;

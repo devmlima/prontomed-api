@@ -1,0 +1,714 @@
+openapi: 3.0.3
+info:
+  title: ProntoMed API
+  description: |
+    REST API for the ProntoMed electronic medical record system.
+
+    ## Authentication
+    All routes except `/auth/login` and `/auth/register` require a Bearer token
+    obtained from the login endpoint. The token expires in **24 hours**.
+
+    ```
+    Authorization: Bearer <token>
+    ```
+
+    ## Ownership
+    Every authenticated route is scoped to the logged-in doctor. The `doctorId`
+    is extracted from the JWT — never sent in the request body.
+  version: 1.0.0
+  contact:
+    email: devmlima@gmail.com
+
+servers:
+  - url: http://localhost:3000/api
+    description: Local development
+
+tags:
+  - name: Auth
+    description: Registration and login (public)
+  - name: Patients
+    description: Patient management (requires authentication)
+  - name: Appointments
+    description: Appointment management (requires authentication)
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    # ─── Enums ────────────────────────────────────────────────────────────────
+    Gender:
+      type: string
+      enum: [M, F, O]
+      description: |
+        - `M` — Male
+        - `F` — Female
+        - `O` — Other
+
+    AppointmentStatus:
+      type: string
+      enum: [scheduled, completed, cancelled]
+      description: |
+        - `scheduled` — Default status on creation
+        - `completed` — Consultation was completed
+        - `cancelled` — Appointment was cancelled
+
+    # ─── Domain objects ───────────────────────────────────────────────────────
+    Doctor:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+        name:
+          type: string
+          example: Dr. João Silva
+        email:
+          type: string
+          format: email
+          example: joao@email.com
+        crm:
+          type: string
+          example: CRM/SP 123456
+
+    Patient:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: b2c3d4e5-f6a7-8901-bcde-f12345678901
+        doctorId:
+          type: string
+          format: uuid
+          example: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+        name:
+          type: string
+          example: Pedro Lima
+        phone:
+          type: string
+          example: "(11) 99999-9999"
+        email:
+          type: string
+          format: email
+          example: pedro@email.com
+        birthDate:
+          type: string
+          format: date
+          example: "1987-01-01"
+        gender:
+          $ref: "#/components/schemas/Gender"
+        height:
+          type: number
+          format: float
+          example: 1.68
+        weight:
+          type: number
+          format: float
+          example: 75.5
+        createdAt:
+          type: string
+          format: date-time
+          example: "2026-06-16T00:00:00.000Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2026-06-16T00:00:00.000Z"
+
+    Appointment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: c3d4e5f6-a7b8-9012-cdef-123456789012
+        doctorId:
+          type: string
+          format: uuid
+          example: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+        patientId:
+          type: string
+          format: uuid
+          example: b2c3d4e5-f6a7-8901-bcde-f12345678901
+        scheduledAt:
+          type: string
+          format: date-time
+          example: "2026-06-20T14:00:00.000Z"
+        durationMinutes:
+          type: integer
+          example: 30
+        status:
+          $ref: "#/components/schemas/AppointmentStatus"
+        notes:
+          type: string
+          nullable: true
+          example: "Patient has a history of hypertension"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2026-06-16T00:00:00.000Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2026-06-16T00:00:00.000Z"
+
+    # ─── Generic responses ────────────────────────────────────────────────────
+    ErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: Descriptive error message
+
+    AuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        doctor:
+          $ref: "#/components/schemas/Doctor"
+
+    PatientListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Patient"
+        total:
+          type: integer
+          example: 1
+
+    AppointmentListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Appointment"
+        total:
+          type: integer
+          example: 1
+
+  # ─── Reusable responses ────────────────────────────────────────────────────
+  responses:
+    Unauthorized:
+      description: Missing, invalid, or expired token
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            message: Invalid or expired token
+
+    Forbidden:
+      description: Resource belongs to another doctor
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            message: Forbidden
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+    InternalServerError:
+      description: Unexpected internal error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            message: Internal server error
+
+# ─── Endpoints ──────────────────────────────────────────────────────────────
+paths:
+
+  # ══════════════════════════════════════════
+  # AUTH
+  # ══════════════════════════════════════════
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Register a new doctor
+      description: Creates a new doctor account and returns a JWT token.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, password, crm]
+              properties:
+                name:
+                  type: string
+                  example: Dr. João Silva
+                email:
+                  type: string
+                  format: email
+                  example: joao@email.com
+                password:
+                  type: string
+                  format: password
+                  example: senha123
+                crm:
+                  type: string
+                  example: CRM/SP 123456
+      responses:
+        "201":
+          description: Doctor registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Doctor login
+      description: Authenticates a doctor and returns a JWT token valid for 24 hours.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: joao@email.com
+                password:
+                  type: string
+                  format: password
+                  example: senha123
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Email or password missing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                message: Email and password are required
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                message: Invalid credentials
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  # ══════════════════════════════════════════
+  # PATIENTS
+  # ══════════════════════════════════════════
+  /patients:
+    get:
+      tags: [Patients]
+      summary: List patients
+      description: Returns all non-anonymized patients belonging to the authenticated doctor.
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Patient list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PatientListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+    post:
+      tags: [Patients]
+      summary: Create a patient
+      description: Creates a new patient linked to the authenticated doctor.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, phone, email, birthDate, gender, height, weight]
+              properties:
+                name:
+                  type: string
+                  example: Pedro Lima
+                phone:
+                  type: string
+                  example: "(11) 99999-9999"
+                email:
+                  type: string
+                  format: email
+                  example: pedro@email.com
+                birthDate:
+                  type: string
+                  format: date
+                  example: "1987-01-01"
+                gender:
+                  $ref: "#/components/schemas/Gender"
+                height:
+                  type: number
+                  format: float
+                  example: 1.68
+                weight:
+                  type: number
+                  format: float
+                  example: 75.5
+      responses:
+        "201":
+          description: Patient created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Patient"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /patients/{id}:
+    get:
+      tags: [Patients]
+      summary: Get patient by ID
+      description: Returns a single patient. Returns 403 if the patient belongs to another doctor.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          example: b2c3d4e5-f6a7-8901-bcde-f12345678901
+      responses:
+        "200":
+          description: Patient found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Patient"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+    put:
+      tags: [Patients]
+      summary: Update a patient
+      description: Updates one or more fields of a patient. All fields are optional.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          example: b2c3d4e5-f6a7-8901-bcde-f12345678901
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: Pedro Atualizado
+                phone:
+                  type: string
+                  example: "(11) 98888-8888"
+                email:
+                  type: string
+                  format: email
+                  example: novo@email.com
+                birthDate:
+                  type: string
+                  format: date
+                  example: "1987-01-01"
+                gender:
+                  $ref: "#/components/schemas/Gender"
+                height:
+                  type: number
+                  format: float
+                  example: 1.70
+                weight:
+                  type: number
+                  format: float
+                  example: 80.0
+      responses:
+        "200":
+          description: Patient updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Patient"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+    delete:
+      tags: [Patients]
+      summary: Anonymize a patient (LGPD)
+      description: |
+        Does **not** delete the record. Replaces `name`, `email`, and `phone`
+        with a 16-character SHA-256 hash and sets `deleted_at`. The patient
+        no longer appears in any listing.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          example: b2c3d4e5-f6a7-8901-bcde-f12345678901
+      responses:
+        "204":
+          description: Patient anonymized — no body returned
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  # ══════════════════════════════════════════
+  # APPOINTMENTS
+  # ══════════════════════════════════════════
+  /appointments:
+    get:
+      tags: [Appointments]
+      summary: List appointments
+      description: Returns all appointments for the authenticated doctor, ordered by `scheduledAt` ascending.
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Appointment list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppointmentListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+    post:
+      tags: [Appointments]
+      summary: Create an appointment
+      description: |
+        Creates a new appointment. The API validates that the doctor has no
+        non-cancelled appointment overlapping the interval
+        `scheduledAt → scheduledAt + durationMinutes`.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [patientId, scheduledAt, durationMinutes]
+              properties:
+                patientId:
+                  type: string
+                  format: uuid
+                  example: b2c3d4e5-f6a7-8901-bcde-f12345678901
+                scheduledAt:
+                  type: string
+                  format: date-time
+                  example: "2026-06-20T14:00:00"
+                durationMinutes:
+                  type: integer
+                  example: 30
+                notes:
+                  type: string
+                  nullable: true
+                  example: "Patient has a history of hypertension"
+      responses:
+        "201":
+          description: Appointment created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Appointment"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          description: Time slot conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                message: Doctor already has an appointment in this time slot
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /appointments/{id}:
+    get:
+      tags: [Appointments]
+      summary: Get appointment by ID
+      description: Returns a single appointment. Returns 403 if it belongs to another doctor.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          example: c3d4e5f6-a7b8-9012-cdef-123456789012
+      responses:
+        "200":
+          description: Appointment found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Appointment"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+    put:
+      tags: [Appointments]
+      summary: Update an appointment
+      description: |
+        Updates one or more fields of an appointment. All fields are optional.
+        If `scheduledAt` or `durationMinutes` are changed, overlap validation
+        is re-run. Sending only `status` skips the overlap check.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          example: c3d4e5f6-a7b8-9012-cdef-123456789012
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                patientId:
+                  type: string
+                  format: uuid
+                  example: b2c3d4e5-f6a7-8901-bcde-f12345678901
+                scheduledAt:
+                  type: string
+                  format: date-time
+                  example: "2026-06-20T15:00:00"
+                durationMinutes:
+                  type: integer
+                  example: 45
+                status:
+                  $ref: "#/components/schemas/AppointmentStatus"
+                notes:
+                  type: string
+                  nullable: true
+                  example: "Follow-up required"
+      responses:
+        "200":
+          description: Appointment updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Appointment"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Time slot conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                message: Doctor already has an appointment in this time slot
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /appointments/{id}/cancel:
+    patch:
+      tags: [Appointments]
+      summary: Cancel an appointment
+      description: |
+        Sets `status = "cancelled"`. The record is preserved in the database.
+        No body required.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          example: c3d4e5f6-a7b8-9012-cdef-123456789012
+      responses:
+        "204":
+          description: Appointment cancelled — no body returned
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
