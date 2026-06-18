@@ -4,6 +4,8 @@ Backend do sistema de prontuário eletrônico **ProntoMed**.
 
 REST API construída com **Node.js + TypeScript + Express**, seguindo arquitetura em camadas (Clean Architecture), com autenticação JWT, banco de dados MySQL e testes unitários com Jest.
 
+> Frontend disponível em [prontomed-fe](https://github.com/devmlima/prontomed-fe) — deploy em produção: [prontomed-fe-kp76.vercel.app](https://prontomed-fe-kp76.vercel.app)
+
 ---
 
 ## Tecnologias
