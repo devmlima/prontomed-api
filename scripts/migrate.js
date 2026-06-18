@@ -3,6 +3,7 @@ const path = require('path');
 const mysql = require('mysql2/promise');
 
 const migrations = [
+  '000_create_doctors.sql',
   '001_create_patients.sql',
   '002_create_appointments.sql',
   '003_add_notes_to_appointments.sql',
